@@ -777,9 +777,10 @@ def monstercat_filter(array):
             #prevV = OddOneOut(savitskyGolaySmooth(array, 3, 1))[i-1]
             #currV = OddOneOut(savitskyGolaySmooth(array, 3, 1))[i]
             #nextV = OddOneOut(savitskyGolaySmooth(array, 3, 1))[i+1]
-            prevV = (array[i-1])
-            currV = (array[i])
-            nextV = (array[i+1])
+            prevV = (array[i-1]*((i*1.25)/maxBars))
+            currV = (array[i]*((i*1.25)/maxBars))
+            nextV = (array[i+1]*((i*1.25)/maxBars))
+            #print(((i*2)/maxBars))
                 #print("yes")
             #avgArr = averageTrform(array)
             #newArr2[i] = ((savitskyGolaySmooth(newArr2,passes,p)[i-1])+(savitskyGolaySmooth(array,passes,p)[i])+(savitskyGolaySmooth(array,passes,p)[i+1])/float(args["smlevel"])) # ((maxBars-trebleBars)-16)
