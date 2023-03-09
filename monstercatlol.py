@@ -754,7 +754,7 @@ def monstercat_filter(array):
     #newArr2 = [0] * (len(array)+8)
     #smootht = savitskyGolaySmooth(array, 3, 1)
     #SmoothT_2 = averageTransform(smooth1(array,abs((maxBars-5))))
-    #smootht = scipy.signal.savgol_filter(array, 3, 1)
+    smootht = scipy.signal.savgol_filter(array, 3, 1)
     #Smmoth = smooth1(SmoothT, maxBars)
     #SmoothT_1 = savitskyGolaySmooth(array, abs(((maxBars-trebleBars)-16)), abs(int(args["maxhightreblebars"])))
     #SmoothT_1 = savitskyGolaySmooth(array, (int(args["maxhightreblebars"])), abs((int(args["maxhightreblebars"]-1))))
@@ -777,9 +777,9 @@ def monstercat_filter(array):
             #prevV = OddOneOut(savitskyGolaySmooth(array, 3, 1))[i-1]
             #currV = OddOneOut(savitskyGolaySmooth(array, 3, 1))[i]
             #nextV = OddOneOut(savitskyGolaySmooth(array, 3, 1))[i+1]
-            prevV = (array[i-1]*((i*1.25)/maxBars))
-            currV = (array[i]*((i*1.25)/maxBars))
-            nextV = (array[i+1]*((i*1.25)/maxBars))
+            prevV = (((array[i-1]/2)+(smootht[i-1]/2))*((i*1.25)/maxBars))
+            currV = (((array[i]/2)+(smootht[i]/2))*((i*1.25)/maxBars))
+            nextV = (((array[i+1]/2)+(smootht[i+1]/2))*((i*1.25)/maxBars))
             #print(((i*2)/maxBars))
                 #print("yes")
             #avgArr = averageTrform(array)
@@ -1259,14 +1259,14 @@ if __name__ == "__main__":
                         #fft_complex_t_sizzle
                         wave_bass_t_sizzle = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_sizzle))*10
                         wave_bass_t_treble = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_treble))*abs(4)
-                        valueMag = ((((wave_bass[i]*4))-(wave_bass_t_mid[(maxBars-4)])+wave_bass_t_treble[maxBars-1]-(wave_bass_t_treble[(maxBars-1)]-((wave_bass_t_mid[i]+wave_bass_t_mid_2[i])))))
+                        valueMag = ((((wave_bass[i]*2))-(wave_bass_t_mid[(maxBars-4)])+wave_bass_t_treble[maxBars-1]-(wave_bass_t_treble[(maxBars-1)]-((wave_bass_t_mid[i]+wave_bass_t_mid_2[i]))))-wave_bass_t_kick[i])
                             #print(valueMag)
                         #if SMOOTHING_FACTOR != -1:
                         #bars[i] = int(abs((bars[i] * float(args["initialtreble"])) + ((abs(((int(window[i]+valueMag))))) * (1-float(args["initialtreble"])))))
                         #else:
                         #if (ease == 1):
                         valueMag *= 2
-                        bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(valueMag/3))))) * (1-float(0.90)))))
+                        bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(valueMag/2))))) * (1-float(0.90)))))
                         treble_i += 1
                     if(i>=(trebleBars-4) and i < (trebleBars-1)):
                         wave_bass = (np.abs(fft_complex)/16)
@@ -1285,14 +1285,14 @@ if __name__ == "__main__":
                         wave_bass_t_treble = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_treble))*abs(4)
                         wave_bass_t_kick = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_kick))*10
                         wave_bass_t_hihats = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_hihats_iso))*10
-                        valueMag = ((((wave_bass[i]*4))-(wave_bass_t_mid[(maxBars-4)])+wave_bass_t_treble[maxBars-1]-(wave_bass_t_treble[(maxBars-1)]-((wave_bass_t_mid[i]+wave_bass_t_mid_2[i])))))
+                        valueMag = ((((wave_bass[i]*4))-(wave_bass_t_mid[(maxBars-4)])+wave_bass_t_treble[maxBars-1]-(wave_bass_t_treble[(maxBars-1)]-((wave_bass_t_mid[i]+wave_bass_t_mid_2[i]))))-wave_bass_t_kick[i])
                             #print(valueMag)
                         #if SMOOTHING_FACTOR != -1:
                         #bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(window[i]+valueMag))))) * (1-float(0.90)))))
                         #else:
                         #if (ease == 1):
                         valueMag *= 2
-                        bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(valueMag/3))))) * (1-float(0.90)))))
+                        bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(valueMag/2))))) * (1-float(0.90)))))
                         treble_i += 1
                         #bars[i] = int(abs(((window[i]+valueMag))))
                     elif(i>=(trebleBars) and i<(maxBars-14)):
