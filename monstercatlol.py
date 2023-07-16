@@ -131,19 +131,19 @@ ap = argparse.ArgumentParser()
 ap.add_argument("-m", "--maxbars", default=64,   help="How many max bars? (64 bars for a monstercat effect!)")
 ap.add_argument("-i", "--initial", default=0.00,   help="Level Initial")
 ap.add_argument("-ti", "--trebleinitial", default=0.00,   help="Treble Level Initial")
-ap.add_argument("-hi", "--high", default=486,   help="High frequency bin")
-ap.add_argument("-l", "--low", default=5,   help="Low frequency bin")
+ap.add_argument("-hi", "--high", default=474,   help="High frequency bin")
+ap.add_argument("-l", "--low", default=4,   help="Low frequency bin")
 ap.add_argument("-hi1", "--high1", default=10000,   help="High frequency cutoff")
 ap.add_argument("-l1", "--low1", default=10,   help="Low frequency  cutoff")
 ap.add_argument("-g", "--initialtreble", default=0.00,   help="Treble Level Initial.")
-ap.add_argument("-v", "--volume", default=0.06, help="volume.")
-ap.add_argument("-ga", "--gain", default=0.03,   help="Treble volume.")
+ap.add_argument("-v", "--volume", default=0.045, help="volume.")
+ap.add_argument("-ga", "--gain", default=0.05,   help="Treble volume.")
 ap.add_argument("-q", "--levelMax", default=0.67,   help="Smoothing Decay")
 ap.add_argument("-1", "--level", default=0.67,   help="Smoothing Attack")
 ap.add_argument("-t", "--maxtreblebars", default=43,   help="Offset treble bars? (42 for monstercat effect!)")
 ap.add_argument("-th", "--maxhightreblebars", default=47,   help="Offset high treble bars? (42 for monstercat effect!)")
-ap.add_argument("-2", "--smlevel", default=2,   help="Smoothing Level (Monstercat Style)") # was 1.5 or 3
-ap.add_argument("-4", "--sm2level", default=1.5,   help="Smoothing Level 2 (Monstercat Style)")
+ap.add_argument("-2", "--smlevel", default=12,   help="Smoothing Level (Monstercat Style)") # was 1.5 or 3
+ap.add_argument("-4", "--sm2level", default=3,   help="Smoothing Level 2 (Monstercat Style)")
 ap.add_argument("-3", "--treblesmlevel", default=3,   help="Treble Smoothing Level (Monstercat Style)") # maybe the same with maxbars?
 #treblehighsmlevel
 ap.add_argument("-5", "--treblehighsmlevel", default=3,   help="High Treble Smoothing Level (Monstercat Style)") # maybe the same with maxbars?
@@ -152,7 +152,7 @@ ap.add_argument("-mam", "--measureaudiomultiplier", default=40,   help="....")
 ap.add_argument("-sens", "--sensitivity", default=35,   help="....")
 ap.add_argument("-sp", "--spacing", default=16,   help="...")
 ap.add_argument("-si", "--size", default=13,   help="...")
-ap.add_argument("-fi", "--mcfilter", default=3,   help="...")
+ap.add_argument("-fi", "--mcfilter", default=2.0,   help="...")
 ap.add_argument("-wf", "--wavefilter", default=0.0,   help="...")
 ap.add_argument("-sa", "--samples", default=44100,   help="...") # 48000
 ap.add_argument("-fft", "--fftsize", default=2000,   help="...") # 14!
@@ -161,6 +161,7 @@ ap.add_argument("-int", "--integral", default=85,   help="...")
 ap.add_argument("-tint", "--trebleintegral", default=85,   help="...")
 ap.add_argument("-gra", "--gravity", default=1500,   help="...")
 ap.add_argument("-eq", "--eqbalance", default=0.64,   help="...")
+ap.add_argument("-ls", "--logscale", default=1.64,   help="...")
 ap.add_argument("-lm", "--limit", default=1500,   help="height limit")
 args = vars(ap.parse_args())
 maxVolume = float(args["volume"])
@@ -486,7 +487,7 @@ headMargin = 7
 tailMargin = 1
 minMarginWeight = 0.7
 headMarginSlope = (1-minMarginWeight) / pow(headMargin, marginDecay)
-tailMarginSlope = (1-minMarginWeight) / pow(tailMargin, marginDecay)
+tailMarginSlope = 0
 def tailTransform(array):
     array = np.asarray(array)
     values = [0] * len(array)
@@ -495,7 +496,7 @@ def tailTransform(array):
         if (i < headMargin):
             value *= headMarginSlope * pow(i + 1, marginDecay) + minMarginWeight
         elif (maxBars - i <= tailMargin):
-            value *= tailMarginSlope * pow(maxBars - i, marginDecay) + minMarginWeight
+            value *= tailMarginSlope * pow(int(args["size"]) - i, marginDecay) + minMarginWeight
         values[i] = value
     return values
 spectrumMaxExponent = 6
@@ -589,7 +590,7 @@ def calcTreble(array):
 
 def expTransform(array):
     array = np.asarray(array)
-    resistance = int(args["smlevel"])
+    resistance = int(args["sm2level"])
     newArr = [0] * len(array)
     for i in range(len(array)):
         sum = 0
@@ -665,7 +666,7 @@ def Filter(array, waves, monstercat):
                 array[m_y] = max(array[z] - pow(monstercat, 2), array[m_y])
     return array
 
-logScale = 1.55
+logScale = float(args['logscale'])
 eqBalance = float(args['eqbalance'])
 cuttoffs = [0] * (maxBars + 1)
 def CutoffFreq(array,lower,upper):
@@ -711,8 +712,8 @@ def OddOneOut(array):
 #array2 = [0] * (maxBars+8)
 fmem = [0] * (maxBars+8)
 def Integral(array,gravity):
-    f = FalloffFilt(array,gravity)
-    #f = array
+    #f = FalloffFilt(array,gravity)
+    f = array
     integral = int(args["integral"]) / 100
     tintegral = int(args["trebleintegral"]) / 100
     array = np.asarray(array)
@@ -766,9 +767,9 @@ def monstercat_filter(array):
     newArr2 = [0] * (len(array)+8)
     mcat = array
     #newArr2 = [0] * (len(array)+8)
-    smootht = smooth1(array, 3)
+    #smootht = smooth1(array, 3)
     #SmoothT_2 = averageTransform(smooth1(array,abs((maxBars-5))))
-    #smootht = scipy.signal.savgol_filter(array, 3, 1)
+    smootht = savitskyGolaySmooth(array, 3, 1)
     #Smmoth = smooth1(SmoothT, maxBars)
     #SmoothT_1 = savitskyGolaySmooth(array, abs(((maxBars-trebleBars)-16)), abs(int(args["maxhightreblebars"])))
     #SmoothT_1 = savitskyGolaySmooth(array, (int(args["maxhightreblebars"])), abs((int(args["maxhightreblebars"]-1))))
@@ -776,12 +777,16 @@ def monstercat_filter(array):
     sumTreble = 0
     for i in range(1,maxBars):
         #newArr2[i-1] = ((array[i-1]+array[i]+array[i+1]/float(args["smlevel"]))/8)*2
-        newArr2[i] = ((mcat[i-1]+mcat[i]+mcat[i+1]/float(args["smlevel"])))
+        newArr2[i] = ((((smootht[i-1]/3)+(mcat[i-1]))+((smootht[i]/3)+(mcat[i]))+((smootht[i+1]/3)+(mcat[i+1]))/float(args["smlevel"])))
         #newArr2[i] = mcat[i]
         #newArr2[i+1] = ((array[i-1]+array[i]+array[i+1]/float(args["smlevel"]))/8)
         #newArr2[i+1] = (array[i-1]+array[i]+array[i+1]/float(args["smlevel"]))
 		
 #	if i >= (trebleBars):
+        if(i>=(trebleBars-5) and i < (trebleBars)):
+           newArr2[i] = ((((smootht[i-1]))+((smootht[i]))+((smootht[i+1]))/float(args["smlevel"])))
+        if(i>=(trebleBars-4) and i < (trebleBars-1)):
+           newArr2[i] = ((((smootht[i-1]))+((smootht[i]))+((smootht[i+1]))/float(args["smlevel"])))
         if i > (trebleBars):
             passes = 3
             p = 1
@@ -791,9 +796,9 @@ def monstercat_filter(array):
             #prevV = OddOneOut(savitskyGolaySmooth(array, 3, 1))[i-1]
             #currV = OddOneOut(savitskyGolaySmooth(array, 3, 1))[i]
             #nextV = OddOneOut(savitskyGolaySmooth(array, 3, 1))[i+1]
-            prevV = ((((smootht[i-1]/4)+(mcat[i-1]/2)))*((i*0.65)/maxBars))
-            currV = ((((smootht[i]/4)+(mcat[i]/2)))*((i*0.65)/maxBars))
-            nextV = ((((smootht[i+1]/4)+(mcat[i+1]/2)))*((i*0.65)/maxBars))
+            prevV = ((smootht[i-1])) * ((i*1.10)/maxBars)
+            currV = ((smootht[i])) * ((i*1.10)/maxBars)
+            nextV = ((smootht[i+1])) * ((i*1.10)/maxBars)
             #print(((i*2)/maxBars))
                 #print("yes")
             #avgArr = averageTrform(array)
@@ -801,7 +806,7 @@ def monstercat_filter(array):
             #newArr2[i] = ((prevV+currV+nextV/float(args["smlevel"])))
             #newArr2[i] = (((prevV+currV+nextV/8)) + ((array[i-1]+array[i]+array[i+1]/8)))
             #newArr2[i] = (((prevV + currV + nextV ))) # / 64 - ((array[i-1] + array[i] + array[i+1] / 8))
-            newArr2[i] = ((prevV + currV + nextV / 12))
+            newArr2[i] = ((prevV + currV + nextV / float(args["smlevel"])))
             if newArr2[i] <= 0.00000000000000000009:
                 newArr2[i] = 0
 #            if(i>=(maxBars-2)):
@@ -816,7 +821,7 @@ def monstercat_filter(array):
    # prevV = (((smootht[trebleBars-1])))
    # currV = (((smootht[trebleBars])))
     #newArr2[trebleBars+1] -= eqBalance
-    newArr2[trebleBars+1] -= (newArr2[(trebleBars+1)-1]/2)
+    newArr2[trebleBars+1] -= (newArr2[(trebleBars+1)-1]/3)
    #newArr2[trebleBars] -= newArr2[trebleBars-2]
         #if i >= (int(args["maxhightreblebars"])):
         #    newArr2[i] += ((smootht[i-1]+smootht[i]+smootht[i+1]/float(args["treblehighsmlevel"])))
@@ -862,7 +867,7 @@ def getTransformedSpectrum(array):
     #newArr = monstercat_smoothing(array)
     #newArr = averageTransform(newArr)
    # newArr = averageTransform(newArr)
-    #newArr = tailTransform(newArr)
+    newArr = tailTransform(newArr)
     #newArr = expTransform(newArr)
     #newArr = CutoffFreq(newArr,float(args["low"]),float(args["high"]))
     #if itr >= s:
@@ -916,6 +921,7 @@ def getTransformedSpectrum(array):
     #newArr = exponentialTransform(newArr)
     #newArr = smooth1(newArr,1) 
     #newArr = monstercatify(newArr)
+	
     return newArr
 
 import threading
@@ -1096,12 +1102,11 @@ if __name__ == "__main__":
                 input = True,
                 stream_callback=callback)
     streamTreble = p.open(format=sample_format,
-                channels = 4,
+                channels = 2,
                 rate = fs,
-                frames_per_buffer = (2000+maxBars),
+                frames_per_buffer = 2000,
                 input = True,
                 stream_callback=callback1)
-    
     stream.start_stream()
     streamTreble.start_stream()
     #data = sound._data
@@ -1214,7 +1219,7 @@ if __name__ == "__main__":
             #fft_complex_t_sizzle = butter_bandpass_filter(numpy.fft.ifft(filtereddata_t_sizzle,n=maxBars)[:maxBars], 6000, 7500, fs, 1)
             fft_complex_t_sizzle = numpy.fft.ifft(filtereddata_t_sizzle,n=maxBars)[:maxBars]
             #print(fft_complex_t_sizzle)
-            filtereddata_t_voice = numpy.fft.fft(waveform)[350:600+maxBars]
+            filtereddata_t_voice = numpy.fft.fft(waveform)[80:255]
             fft_complex_t_voice = numpy.fft.ifft(filtereddata_t_voice[:maxBars])[:maxBars]
             filtereddata_t_crash = numpy.fft.fft(waveform)[4000:6000+maxBars]
             fft_complex_t_crash = butter_bandpass_filter(filtereddata_t_snare_thump_end_2, 4000, 6000, fs, 1)
@@ -1224,6 +1229,10 @@ if __name__ == "__main__":
 
             filtereddata_t_treble = numpy.fft.fft(waveform)[getFreq(trebleBars):getFreq(maxBars)+maxBars]
             fft_complex_t_treble = numpy.fft.ifft(filtereddata_t_treble,n=maxBars)[:maxBars]
+
+            filtereddata_t_b = numpy.fft.fft(waveform)[6000:20000]
+            fft_complex_t_b = numpy.fft.ifft(filtereddata_t_b,n=maxBars)[:maxBars]
+
             #print(fft_complex_t_treble)
             #print(fft_complex_t_voice)
             #print(fft_complex_t_snare)
@@ -1247,7 +1256,8 @@ if __name__ == "__main__":
                 ease = 1
             treble_i = 1
             for i in range(int((maxBars))):
-                if(i>=1 and (i%2)):
+                if(i>=0 and (i%2)):
+                    #print(i)
                     if(i<(trebleBars-5)): #  - 5
                         wave_bass = wave_bass_t_mid = ((i+10)/(maxBars-3)*np.abs(fft_complex)) / 10
                         #if (ease == 1
@@ -1258,8 +1268,8 @@ if __name__ == "__main__":
                         #else:
                         #bars[i] = int(abs(((window[i]+valueMag))))
                     if(i>=(trebleBars-5) and i < (trebleBars)):
-                        wave_bass = (np.abs(fft_complex)/16)
-                        wave_voice = (np.abs(fft_complex_t_voice)/16)
+                        wave_bass = (np.abs(fft_complex)/24)
+                        wave_voice = (np.abs(fft_complex_t_voice))
                         #wave_bass_t_mid = smooth1(((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid)), maxBars)*(32+treble_i)
                         wave_bass_t_mid = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid))*10
                         wave_bass_t_mid_2 = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid_2))*10
@@ -1276,6 +1286,7 @@ if __name__ == "__main__":
                         wave_bass_t_sizzle = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_sizzle))*10
                         wave_bass_t_treble = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_treble))*10
                         wave_bass_t_claps = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_claps_iso))*abs(10)
+                        wave_bass_t_b = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_b))
                         sumAllsHighEnds = 0
                         for i2 in range(maxBars):
                             sumAllsHighEnds += (wave_bass_t_snare_thump[i2])
@@ -1283,9 +1294,9 @@ if __name__ == "__main__":
                         for i2 in range(maxBars):
                             sumAllsKicks += (wave_bass_t_kick[i2])
                         kick = 0
-                        if((wave_bass_t_kick[i])>1000):
+                        #if((wave_bass_t_kick[i])>1000):
                           #print((wave_bass_t_kick[i]))
-                          kick = (wave_bass_t_kick[i]*32)
+                        kick = (wave_bass_t_kick[i]*24)
                         #print(wave_bass_t_claps[i])
                         kickSl = int(abs((bars[i] * float(0.80)) + ((abs(((int(kick))))) * (1-float(0.80)))))
                         valueMag = ((((wave_bass[i]*2)+(wave_bass_t_treble[i]*4)+(wave_bass_t_claps[i]*2))-(wave_bass_t_mid[(maxBars-4)])+wave_bass_t_treble[maxBars-1]-(wave_bass_t_treble[(maxBars-1)]+wave_bass_t_hihats[i]-((wave_bass_t_mid[i]+wave_bass_t_mid_2[i]))))-kickSl)
@@ -1300,8 +1311,8 @@ if __name__ == "__main__":
                         bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(valueMag/3))))) * (1-float(0.90)))))
                         treble_i += 1
                     if(i>=(trebleBars-4) and i < (trebleBars-1)):
-                        wave_bass = (np.abs(fft_complex)/16)
-                        wave_voice = (np.abs(fft_complex_t_voice)/16)
+                        wave_bass = (np.abs(fft_complex)/24)
+                        wave_voice = (np.abs(fft_complex_t_voice))
                         #wave_bass_t_mid = smooth1(((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid)), maxBars)*(32+treble_i)
                         wave_bass_t_mid = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid))*10
                         wave_bass_t_mid_2 = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid_2))*10
@@ -1318,6 +1329,7 @@ if __name__ == "__main__":
                         wave_bass_t_hihats = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_hihats_iso))*10
 			#fft_complex_t_claps_iso
                         wave_bass_t_claps = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_claps_iso))*abs(10)
+                        wave_bass_t_b = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_b))
                         sumAllsHighEnds = 0
                         for i2 in range(maxBars):
                             sumAllsHighEnds += (wave_bass_t_snare[i2]+wave_bass_t_snare_2[i2]+wave_bass_t_snare_thump[i2])
@@ -1327,12 +1339,12 @@ if __name__ == "__main__":
                         #print(sumAllsKicks)
                         #print(wave_bass_t_claps[i])
                         kick = 0
-                        if((wave_bass_t_kick[i])>1000):
+                        #if((wave_bass_t_kick[i])>1000):
                           #print((wave_bass_t_kick[i]))
-                          kick = (wave_bass_t_kick[i]*32)
+                        kick = (wave_bass_t_kick[i]*24)
                         #print(wave_bass_t_claps[i])
                         kickSl = int(abs((bars[i] * float(0.80)) + ((abs(((int(kick))))) * (1-float(0.80)))))
-                        valueMag = ((((wave_bass[i]*4)+(wave_bass_t_treble[i]*4)+(wave_bass_t_claps[i]*2))-(wave_bass_t_mid[(maxBars-4)])+wave_bass_t_treble[maxBars-1]-(wave_bass_t_treble[(maxBars-1)]+wave_bass_t_hihats[i]-((wave_bass_t_mid[i]+wave_bass_t_mid_2[i]))))-kickSl)
+                        valueMag = ((((wave_bass[i]*12)+(wave_bass_t_treble[i]*4)+(wave_bass_t_claps[i]*2))-(wave_bass_t_mid[(maxBars-4)])+wave_bass_t_treble[maxBars-1]-(wave_bass_t_treble[(maxBars-1)]+wave_bass_t_hihats[i]-((wave_bass_t_mid[i]+wave_bass_t_mid_2[i]))))-kickSl)
                         if(valueMag <= 0):
                           valueMag = 0
 			    #print(valueMa)g
@@ -1341,12 +1353,12 @@ if __name__ == "__main__":
                         #else:
                         #if (ease == 1):
                         valueMag *= 4
-                        bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(valueMag/3)))))) * (1-float(0.90))))
+                        bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(valueMag)))))) * (1-float(0.90))))
                         treble_i += 1
                         #bars[i] = int(abs(((window[i]+valueMag))))
                     elif(i>=(trebleBars) and i<(maxBars-14)):
                         #wave_bass_t = smooth1(getTransf/ormedSpectrum(((i+100) / maxBars * np.abs(fft_complex_t))),4)
-                        wave_bass = (np.abs(fft_complex)/10)
+                        wave_bass = (np.abs(fft_complex)/24)
                         wave_voice = (np.abs(fft_complex_t_voice))
                         #wave_bass_t_low = ((((i))) / maxBars * np.abs(fft_complex_t_low))*10
                         wave_bass_t_mid = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid))*10
@@ -1358,6 +1370,7 @@ if __name__ == "__main__":
                         #fft_complex_t_sizzle
                         wave_bass_t_sizzle = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_sizzle))
                         wave_bass_t_treble = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_treble))*10
+                        wave_bass_t_b = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_b))
                         #wave_bass_t_mid = smooth1(wave_bass_t_mid,maxBars)*4
                         #wave_bass_t_high = smooth1(wave_bass_t_low,maxBars)*4
                         #print(wave_bass)
@@ -1376,7 +1389,7 @@ if __name__ == "__main__":
                         treble_i += 1
                     elif(i>=(maxBars-14) and i<(maxBars-9)):
                         #wave_bass_t = smooth1(getTransf/ormedSpectrum(((i+100) / maxBars * np.abs(fft_complex_t))),4)
-                        wave_bass = (np.abs(fft_complex)/16)
+                        wave_bass = (np.abs(fft_complex)/24)
                         wave_voice = (np.abs(fft_complex_t_voice))
                         #wave_bass_t_low = ((((i))) / maxBars * np.abs(fft_complex_t_low))*10
                         wave_bass_t_mid = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid))*10
@@ -1389,6 +1402,7 @@ if __name__ == "__main__":
                         wave_bass_t_sizzle = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_sizzle))*4
                         wave_bass_t_treble = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_treble))*10
                         wave_bass_t_claps = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_claps_iso))*abs(treble_i)
+                        wave_bass_t_b = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_b))
                         #wave_bass_t_mid = smooth1(wave_bass_t_mid,maxBars)*4
                         #wave_bass_t_high = smooth1(wave_bass_t_low,maxBars)*4
                         #print(wave_bass)
@@ -1399,7 +1413,7 @@ if __name__ == "__main__":
                         #if SMOOTHING_FACTOR != -1:
                             #bars1[i] = int(abs((bars1[i] * (SMOOTHING_FACTOR+0.20)) + ((abs(((wave_bass_t2[i])))) * (1-(SMOOTHING_FACTOR+0.20))))) # wave_bass_t[i]+wave_bass_t2[i]
                         wave_bass_t_claps = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_claps_iso))*abs(treble_i)
-                        bars[i] = int(abs((bars[i] * float(args["trebleinitial"])) + (abs(((wave_voice[i]+wave_bass[i]+wave_bass_t_treble[i]+wave_bass_t_snare[i]+wave_bass_t_snare_2[i]+wave_voice[i]+wave_bass_t_claps[i])))) * (1-float(args["trebleinitial"]))))
+                        bars[i] = int(abs((bars[i] * float(args["trebleinitial"])) + (abs(((wave_bass[i]+wave_voice[i]+wave_bass_t_treble[i]+wave_bass_t_snare[i]+wave_bass_t_snare_2[i]+wave_voice[i]+wave_bass_t_claps[i])))) * (1-float(args["trebleinitial"]))))
                         #if (ease == 1):
                         #bars[i] = abs(window[i]+wave_bass_t_mid[i]+wave_bass_t_snare[i])
                         #bars[i] = abs((bars[i] * SMOOTHING_FACTOR) + ((abs(((bars1[i])))) * (1-SMOOTHING_FACTOR)))
@@ -1418,6 +1432,7 @@ if __name__ == "__main__":
                         #fft_complex_t_sizzle
                         wave_bass_t_sizzle = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_sizzle))*4
                         wave_bass_t_treble = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_treble))*10
+                        wave_bass_t_b = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_b))
                         #wave_bass_t_high = smooth1(wave_bass_t_low,maxBars)*4
                         #print(wave_bass)
                         #valueMag = wave_bass[mD]
@@ -1427,7 +1442,7 @@ if __name__ == "__main__":
                         #if SMOOTHING_FACTOR != -1:
                             #bars1[i] = int(abs((bars1[i] * (SMOOTHING_FACTOR+0.20)) + ((abs(((wave_bass_t2[i])))) * (1-(SMOOTHING_FACTOR+0.20))))) # wave_bass_t[i]+wave_bass_t2[i]
                         wave_bass_t_claps = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_claps_iso))*abs(treble_i)
-                        bars[i] = int(abs((bars[i] * float(args["trebleinitial"])) + (abs(((wave_bass_t_treble[i]+wave_bass_t_treble[i]+wave_bass_t_mid[i]+wave_bass_t_mid_2[i]+wave_bass_t_snare[i]+wave_bass_t_snare_2[i]+wave_voice[i]+wave_bass_t_claps[i])))) * (1-float(args["trebleinitial"]))))
+                        bars[i] = int(abs((bars[i] * float(args["trebleinitial"])) + (abs(((wave_bass[i]+wave_bass_t_treble[i]+wave_bass_t_treble[i]+wave_bass_t_mid[i]+wave_bass_t_mid_2[i]+wave_bass_t_snare[i]+wave_bass_t_snare_2[i]+wave_voice[i]+wave_bass_t_claps[i])))) * (1-float(args["trebleinitial"]))))
                         #if (ease == 1):
                         #bars[i] = abs(window[i]+wave_bass_t_mid[i]+wave_bass_t_snare[i])
                         #bars[i] = abs((bars[i] * SMOOTHING_FACTOR) + ((abs(((bars1[i])))) * (1-SMOOTHING_FACTOR)))
@@ -1443,6 +1458,7 @@ if __name__ == "__main__":
                         wave_bass_t_snare_thump = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_snare_thump))*10
                         wave_bass_t_crash = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_crash))*10
                         #wave_bass_t_crash = shift(wave_bass_t_crash,-5)
+                        wave_bass_t_b = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_b))
                         #fft_complex_t_sizzle
                         wave_bass_t_sizzle = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_sizzle))*4
                         calcTrebleVal = int(((maxBars)-(maxBars-(maxBars+(maxBars)))/maxBars))
@@ -1459,7 +1475,7 @@ if __name__ == "__main__":
                             #bars1[i] = int(abs((bars1[i] * (SMOOTHING_FACTOR+0.20)) + ((abs(((wave_bass_t2[i])))) * (1-(SMOOTHING_FACTOR+0.20))))) # wave_bass_t[i]+wave_bass_t2[i]
                         #wave_bass_t_crash[i] /= 2
                         wave_bass_t_claps = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_claps_iso))*abs(treble_i)
-                        bars[i] = int(abs((bars[i] * float(args["trebleinitial"])) + (abs(((wave_voice[i]+wave_bass_t_treble[i]+wave_bass_t_treble[i]+wave_bass_t_mid[i]+wave_bass_t_mid_2[i]+wave_bass_t_snare[i]+wave_bass_t_snare_2[i]+wave_voice[i]+wave_bass_t_claps[i])))) * (1-float(args["trebleinitial"]))))
+                        bars[i] = int(abs((bars[i] * float(args["trebleinitial"])) + (abs(((wave_bass[i]+wave_voice[i]+wave_bass_t_treble[i]+wave_bass_t_treble[i]+wave_bass_t_mid[i]+wave_bass_t_mid_2[i]+wave_bass_t_snare[i]+wave_bass_t_snare_2[i]+wave_voice[i]+wave_bass_t_claps[i])))) * (1-float(args["trebleinitial"]))))
                         treble_i += 1
                     elif(i>=(maxBars-8) and i<(maxBars-5)):
                         #wave_bass_t = smooth1(getTransf/ormedSpectrum(((i+100) / maxBars * np.abs(fft_complex_t))),4)
@@ -1473,6 +1489,7 @@ if __name__ == "__main__":
                         wave_bass_t_snare_thump = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_snare_thump))*10
                         wave_bass_t_crash = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_crash))*10
                         #wave_bass_t_crash = shift(wave_bass_t_crash,-5)
+                        wave_bass_t_b = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_b))
                         #fft_complex_t_sizzle
                         wave_bass_t_sizzle = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_sizzle))*4
                         calcTrebleVal = int(((maxBars)-(maxBars-(maxBars+(maxBars)))/maxBars))
@@ -1489,7 +1506,7 @@ if __name__ == "__main__":
                             #bars1[i] = int(abs((bars1[i] * (SMOOTHING_FACTOR+0.20)) + ((abs(((wave_bass_t2[i])))) * (1-(SMOOTHING_FACTOR+0.20))))) # wave_bass_t[i]+wave_bass_t2[i]
                         #wave_bass_t_crash[i] /= 2
                         wave_bass_t_claps = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_claps_iso))*abs(treble_i)
-                        bars[i] = int(abs((bars[i] * float(args["trebleinitial"])) + (abs(((wave_bass_t_treble[i]+wave_bass_t_mid_2[i]+wave_bass_t_snare[i]+wave_bass_t_snare_2[i]+wave_voice[i]+wave_bass_t_mid_2[i]+wave_bass_t_claps[i])))) * (1-float(args["trebleinitial"]))))
+                        bars[i] = int(abs((bars[i] * float(args["trebleinitial"])) + (abs(((wave_bass[i]+wave_bass_t_treble[i]+wave_bass_t_mid_2[i]+wave_bass_t_snare[i]+wave_bass_t_snare_2[i]+wave_voice[i]+wave_bass_t_mid_2[i]+wave_bass_t_claps[i])))) * (1-float(args["trebleinitial"]))))
                         treble_i += 1
                     elif(i>=(maxBars-4) and i<(maxBars-2)):
                         #wave_bass_t = smooth1(getTransf/ormedSpectrum(((i+100) / maxBars * np.abs(fft_complex_t))),4)
@@ -1503,6 +1520,7 @@ if __name__ == "__main__":
                         wave_bass_t_snare_thump = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_snare_thump))*10
                         wave_bass_t_crash = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_crash))*10
                         #wave_bass_t_crash = shift(wave_bass_t_crash,-5)
+                        wave_bass_t_b = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_b))
                         #fft_complex_t_sizzle
                         wave_bass_t_sizzle = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_sizzle))*4
                         calcTrebleVal = int(((maxBars)-(maxBars-(maxBars+(maxBars)))/maxBars))
@@ -1520,7 +1538,7 @@ if __name__ == "__main__":
                             #bars1[i] = int(abs((bars1[i] * (SMOOTHING_FACTOR+0.20)) + ((abs(((wave_bass_t2[i])))) * (1-(SMOOTHING_FACTOR+0.20))))) # wave_bass_t[i]+wave_bass_t2[i]
                         #wave_bass_t_crash[i] /= 2
                         wave_bass_t_claps = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_claps_iso))*abs(treble_i)
-                        bars[i] = int(abs((bars[i] * float(args["trebleinitial"])) + (abs(((wave_voice[i]+(wave_bass_t_treble[i]*2)+wave_bass_t_mid[i]+wave_bass_t_mid_2[i]+wave_bass_t_snare[i]+wave_bass_t_snare_2[i]+wave_voice[i]+wave_bass_t_mid_2[i]+wave_bass_t_claps[i])))) * (1-float(args["trebleinitial"]))))
+                        bars[i] = int(abs((bars[i] * float(args["trebleinitial"])) + (abs(((wave_bass[i]+wave_voice[i]+(wave_bass_t_treble[i]*2)+wave_bass_t_mid[i]+wave_bass_t_mid_2[i]+wave_bass_t_snare[i]+wave_bass_t_snare_2[i]+wave_voice[i]+wave_bass_t_mid_2[i]+wave_bass[i])))) * (1-float(args["trebleinitial"]))))
                         treble_i += 1
                     elif(i==(maxBars-5)):
                         wave_bass = (np.abs(fft_complex)/24)
@@ -1537,6 +1555,7 @@ if __name__ == "__main__":
                         wave_bass_t_sizzle = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_sizzle))*4
                         calcTrebleVal = int(((maxBars)-(maxBars-(maxBars+(maxBars)))/maxBars))
                         wave_bass_t_treble = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_treble))*10
+                        wave_bass_t_b = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_b))
                         #print(calcTrebleVal/4)
                         #wave_bass_t_treble = shift(wave_bass_t_trele,-2)
                         #wave_bass_t_high = smooth1(wave_bass_t_low,maxBars)*4
@@ -1548,22 +1567,23 @@ if __name__ == "__main__":
                         #if SMOOTHING_FACTOR != -1:
                             #bars1[i] = int(abs((bars1[i] * (SMOOTHING_FACTOR+0.20)) + ((abs(((wave_bass_t2[i])))) * (1-(SMOOTHING_FACTOR+0.20))))) # wave_bass_t[i]+wave_bass_t2[i]
                         #wave_bass_t_crash[i] /= 2
-                        bars[i] = int(abs((bars[i] * float(args["trebleinitial"])) + (abs(((wave_voice[i]+(wave_bass_t_treble[i])+wave_bass_t_mid[i]+wave_bass_t_mid_2[i]+wave_bass_t_snare[i]+wave_bass_t_snare_2[i]+wave_voice[i]+wave_bass_t_mid_2[i]+wave_bass_t_claps[i])))) * (1-float(args["trebleinitial"]))))
+                        bars[i] = int(abs((bars[i] * float(args["trebleinitial"])) + (abs(((wave_bass[i]+wave_voice[i]+(wave_bass_t_treble[i])+wave_bass_t_mid[i]+wave_bass_t_mid_2[i]+wave_bass_t_snare[i]+wave_bass_t_snare_2[i]+wave_voice[i]+wave_bass_t_mid_2[i])))) * (1-float(args["trebleinitial"]))))
                         treble_i += 1
                     if(i>=(maxBars-2)):
                         #wave_bass_t = smooth1(getTransf/ormedSpectrum(((i+100) / maxBars * np.abs(fft_complex_t))),4)
                         wave_bass = (np.abs(fft_complex)/24)
                         wave_voice = (np.abs(fft_complex_t_voice))
-                        #wave_bass_t_low = ((((i))) / maxBars * np.abs(fft_complex_t_low))*24
-                        wave_bass_t_mid = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid))*24
-                        wave_bass_t_mid_2 = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid_2))*24
-                        wave_bass_t_snare = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_snare))*24
-                        wave_bass_t_snare_2 = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_snare_2))*24
-                        wave_bass_t_snare_thump = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_snare_thump))*24
-                        wave_bass_t_crash = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_crash))*24
+                        #wave_bass_t_low = ((((i))) / maxBars * np.abs(fft_complex_t_low))*10
+                        wave_bass_t_mid = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid))*18
+                        wave_bass_t_mid_2 = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid_2))*18
+                        wave_bass_t_snare = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_snare))*18
+                        wave_bass_t_snare_2 = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_snare_2))*18
+                        wave_bass_t_snare_thump = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_snare_thump))*18
+                        wave_bass_t_crash = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_crash))*18
                         #fft_complex_t_sizzle
-                        wave_bass_t_sizzle = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_sizzle))*24
-                        wave_bass_t_treble = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_treble))*10
+                        wave_bass_t_sizzle = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_sizzle))*18
+                        wave_bass_t_treble = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_treble))*18
+                        wave_bass_t_b = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_b))
                         #wave_bass_t_high = smooth1(wave_bass_t_low,maxBars)*4
                         #print(wave_bass)
                         #valueMag = wave_bass[mD]
@@ -1579,7 +1599,7 @@ if __name__ == "__main__":
                         wave_bass_t_claps = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_claps_iso))*abs(treble_i)
                         sumAllsHighEnds = 0
                         ampSnare = (bars[i]/bars[maxBars-5])
-                        bars[i] = int(abs((bars[i] * float(args["trebleinitial"])) + (abs(((wave_voice[i]+wave_bass_t_treble[i]+wave_bass_t_mid[i]+wave_bass_t_mid_2[i]+wave_bass_t_snare[i]+wave_bass_t_snare_2[i]+wave_bass_t_snare_thump[i]+wave_bass_t_claps[i])))) * (1-float(args["trebleinitial"]))))
+                        bars[i] = (int(abs((bars[i] * float(args["trebleinitial"])) + (abs(((wave_bass[i]+wave_voice[i]+wave_bass_t_treble[i]+wave_bass_t_mid[i]+wave_bass_t_mid_2[i]+wave_bass_t_snare[i]+wave_bass_t_snare_2[i]+wave_voice[i]+wave_bass_t_snare_thump[i])))) * (1-float(args["trebleinitial"])))))
                         treble_i += 1
             #spectrum = scale(bars, out_range=(-1, maxBars))
             ease += 1
