@@ -131,10 +131,10 @@ ap = argparse.ArgumentParser()
 ap.add_argument("-m", "--maxbars", default=64,   help="How many max bars? (64 bars for a monstercat effect!)")
 ap.add_argument("-i", "--initial", default=0.00,   help="Level Initial")
 ap.add_argument("-ti", "--trebleinitial", default=0.00,   help="Treble Level Initial")
-ap.add_argument("-hi", "--high", default=600,   help="High frequency bin")
-ap.add_argument("-l", "--low", default=1,   help="Low frequency bin")
+ap.add_argument("-hi", "--high", default=1000,   help="High frequency bin")
+ap.add_argument("-l", "--low", default=4,   help="Low frequency bin")
 ap.add_argument("-hi1", "--high1", default=17000,   help="High frequency cutoff")
-ap.add_argument("-l1", "--low1", default=10,   help="Low frequency  cutoff")
+ap.add_argument("-l1", "--low1", default=8,   help="Low frequency  cutoff")
 ap.add_argument("-g", "--initialtreble", default=0.00,   help="Treble Level Initial.")
 ap.add_argument("-v", "--volume", default=0.045, help="volume.")
 ap.add_argument("-ga", "--gain", default=0.05,   help="Treble volume.")
@@ -162,7 +162,7 @@ ap.add_argument("-tint", "--trebleintegral", default=85,   help="...")
 ap.add_argument("-gra", "--gravity", default=15000,   help="...")
 ap.add_argument("-eq", "--eqbalance", default=0.63,   help="...")
 ap.add_argument("-ls", "--logscale", default=1.55,   help="...")
-ap.add_argument("-lm", "--limit", default=15000,   help="height limit")
+ap.add_argument("-lm", "--limit", default=1500,   help="height limit")
 args = vars(ap.parse_args())
 maxVolume = float(args["volume"])
 maxBars = (int(args["maxbars"]))
@@ -712,8 +712,8 @@ def OddOneOut(array):
 #array2 = [0] * (maxBars+8)
 fmem = [0] * (maxBars+8)
 def Integral(array,gravity):
-    #f = FalloffFilt(array,gravity)
-    f = array
+    f = FalloffFilt(array,gravity)
+    #f = array
     integral = int(args["integral"]) / 100
     tintegral = int(args["trebleintegral"]) / 100
     array = np.asarray(array)
@@ -769,7 +769,7 @@ def monstercat_filter(array):
     #newArr2 = [0] * (len(array)+8)
     #smootht = smooth1(array, 3)
     #SmoothT_2 = averageTransform(smooth1(array,abs((maxBars-5))))
-    smootht = savitskyGolaySmooth(array, 3, 1)
+    #smootht = savitskyGolaySmooth(array, 3, 1)
     #Smmoth = smooth1(SmoothT, maxBars)
     #SmoothT_1 = savitskyGolaySmooth(array, abs(((maxBars-trebleBars)-16)), abs(int(args["maxhightreblebars"])))
     #SmoothT_1 = savitskyGolaySmooth(array, (int(args["maxhightreblebars"])), abs((int(args["maxhightreblebars"]-1))))
@@ -777,7 +777,7 @@ def monstercat_filter(array):
     sumTreble = 0
     for i in range(1,maxBars):
         #newArr2[i-1] = ((array[i-1]+array[i]+array[i+1]/float(args["smlevel"]))/8)*2
-        newArr2[i] = ((((smootht[i-1]/3)+(mcat[i-1]))+((smootht[i]/3)+(mcat[i]))+((smootht[i+1]/3)+(mcat[i+1]))/float(args["smlevel"])))
+        newArr2[i] = ((((mcat[i-1]))+((mcat[i]))+((mcat[i+1]))/float(args["smlevel"])))
         #newArr2[i] = mcat[i]
         #newArr2[i+1] = ((array[i-1]+array[i]+array[i+1]/float(args["smlevel"]))/8)
         #newArr2[i+1] = (array[i-1]+array[i]+array[i+1]/float(args["smlevel"]))
@@ -792,9 +792,9 @@ def monstercat_filter(array):
             #prevV = OddOneOut(savitskyGolaySmooth(array, 3, 1))[i-1]
             #currV = OddOneOut(savitskyGolaySmooth(array, 3, 1))[i]
             #nextV = OddOneOut(savitskyGolaySmooth(array, 3, 1))[i+1]
-            prevV = ((smootht[i-1])) * ((i*1.45)/maxBars)
-            currV = ((smootht[i])) * ((i*1.45)/maxBars)
-            nextV = ((smootht[i+1])) * ((i*1.45)/maxBars)
+            prevV = ((mcat[i-1])) * ((i*1.45)/maxBars)
+            currV = ((mcat[i])) * ((i*1.45)/maxBars)
+            nextV = ((mcat[i+1])) * ((i*1.45)/maxBars)
             #print(((i*2)/maxBars))
                 #print("yes")
             #avgArr = averageTrform(array)
@@ -802,7 +802,7 @@ def monstercat_filter(array):
             #newArr2[i] = ((prevV+currV+nextV/float(12)))
             #newArr2[i] = (((prevV+currV+nextV/8)) + ((array[i-1]+array[i]+array[i+1]/8)))
             #newArr2[i] = (((prevV + currV + nextV ))) # / 64 - ((array[i-1] + array[i] + array[i+1] / 8))
-            newArr2[i] = ((prevV + currV + nextV / float(args["smlevel"])))
+            newArr2[i] = ((prevV + currV + nextV / float(12)))
             #newArr2[i] = ((((smootht[i-1]/3)+(mcat[i-1]))+((smootht[i]/3)+(mcat[i]))+((smootht[i+1]/3)+(mcat[i+1]))/float(12)))
             if newArr2[i] <= 0.00000000000000000009:
                 newArr2[i] = 0
@@ -1095,7 +1095,7 @@ if __name__ == "__main__":
     stream = p.open(format=sample_format,
                 channels = 1,
                 rate = fs,
-                frames_per_buffer = 3000,
+                frames_per_buffer = 3000+maxBars,
                 input = True,
                 stream_callback=callback)
     stream.start_stream()
@@ -1174,55 +1174,10 @@ if __name__ == "__main__":
             filtereddata2 = numpy.fft.rfft(filtereddata,n=(maxBars+10))
             fft_complex = numpy.fft.ifft(filtereddata2,n=maxBars)
             
-            filtereddata_t_mid = numpy.fft.fft(waveform1)[1250:2500+maxBars]
-            #filtereddata_t_mid = transformToVisualBins(filtereddata_t_mid)
-            fft_complex_t_mid = numpy.fft.ifft(filtereddata_t_mid[:maxBars],n=maxBars)[:maxBars]
-            filtereddata_t_mid_2 = numpy.fft.fft(waveform1)[900:2000+maxBars]
-            #butter_bandpass_filter(numpy.fft.ifft(filtereddata_t_mid_2,n=maxBars)[:maxBars], 5000, 10000, fs, 1)
-            #filtereddata_t_mid_2 = transformToVisualBins(filtereddata_t_mid_2)
-            fft_complex_t_mid_2 = numpy.fft.ifft(filtereddata_t_mid_2[:maxBars],n=maxBars)[:maxBars]
-            filtereddata_t_kick = numpy.fft.fft(waveform1)[80:200+maxBars]
-            #filtereddata_t_kick = transformToVisualBins(filtereddata_t_kick)
-            fft_complex_t_kick = butter_bandpass_filter(filtereddata_t_kick, 80, 200, fs, maxBars)
-            #butter_bandpass_filter(newArr,1,8000,fs,3)
-            filtereddata_t_snare = numpy.fft.fft(waveform1)[120:250+maxBars]
-            #filtereddata_t_snare = transformToVisualBins(filtereddata_t_snare)
-            #fft_complex_t_snare = butter_bandpass_filter(numpy.fft.ifft(filtereddata_t_snare)[:maxBars], 120, 250, fs, 1)
-            fft_complex_t_snare = numpy.fft.ifft(filtereddata_t_snare)[:maxBars]
-            filtereddata_t_snare_2 = numpy.fft.fft(waveform1)[300:600+maxBars]
-            filtereddata_t_hihats_iso = numpy.fft.fft(waveform1)[300:3000+maxBars]
-            fft_complex_t_hihats_iso = butter_bandpass_filter(filtereddata_t_hihats_iso, 300, 3000, fs, maxBars)
-            filtereddata_t_snares_iso = numpy.fft.fft(waveform1)[120:250+maxBars]
-            fft_complex_t_snares_iso = butter_bandpass_filter(numpy.fft.ifft(filtereddata_t_snares_iso)[:maxBars], 120, 250, fs, maxBars)
-            filtereddata_t_claps_iso = numpy.fft.fft(waveform1)[6000:20000+maxBars]
-            fft_complex_t_claps_iso = butter_bandpass_filter(numpy.fft.ifft(filtereddata_t_snares_iso)[:maxBars], 6000, 20000, fs, maxBars)
-            #filtereddata_t_snare = transformToVisualBins(filtereddata_t_snare)
-            #fft_complex_t_snare_2 = butter_bandpass_filter(numpy.fft.ifft(filtereddata_t_snare_2)[:maxBars], 300, 600, fs, 1)
-            fft_complex_t_snare_2 = numpy.fft.ifft(filtereddata_t_snare_2)[:maxBars]
-            filtereddata_t_snare_thump = numpy.fft.fft(waveform1)[200:300+maxBars]
-            filtereddata_t_snare_thump_end_2 = numpy.fft.fft(waveform1)[2000:3000+maxBars]
-            fft_complex_t_snare_thump_end_2 = butter_bandpass_filter(filtereddata_t_snare_thump_end_2, 2000, 3000, fs, maxBars)
-            #filtereddata_t_snare = transformToVisualBins(filtereddata_t_snare)
-            #fft_complex_t_snare_thump = butter_bandpass_filter(numpy.fft.ifft(filtereddata_t_snare_thump)[:maxBars], 200, 300, fs, 1)
-            fft_complex_t_snare_thump = numpy.fft.ifft(filtereddata_t_snare_thump)[:maxBars]
-            filtereddata_t_sizzle = numpy.fft.fft(waveform1)[10000:10000+maxBars]
-            #filtereddata_t_snare = transformToVisualBins(filtereddata_t_snare)
-            #fft_complex_t_sizzle = butter_bandpass_filter(numpy.fft.ifft(filtereddata_t_sizzle,n=maxBars)[:maxBars], 6000, 7500, fs, 1)
-            fft_complex_t_sizzle = numpy.fft.ifft(filtereddata_t_sizzle,n=maxBars)[:maxBars]
-            #print(fft_complex_t_sizzle)
-            filtereddata_t_voice = numpy.fft.fft(waveform1)[80:255]
-            fft_complex_t_voice = numpy.fft.ifft(filtereddata_t_voice[:maxBars])[:maxBars]
-            filtereddata_t_crash = numpy.fft.fft(waveform1)[4000:6000+maxBars]
-            fft_complex_t_crash = butter_bandpass_filter(filtereddata_t_snare_thump_end_2, 4000, 6000, fs, 1)
-            #print(fft_complex_t_crash)
-            filtereddata_t_bass = numpy.fft.fft(waveform1)[20:60+maxBars]
-            fft_complex_t_bass = butter_bandpass_filter(numpy.fft.ifft(filtereddata_t_bass)[:maxBars], 20, 60, fs, maxBars)
+
 
             filtereddata_t_treble = numpy.fft.fft(waveform1)[getFreq(trebleBars):getFreq(maxBars)]
             fft_complex_t_treble = numpy.fft.ifft(filtereddata_t_treble,n=maxBars)[:maxBars]
-
-            filtereddata_t_b = numpy.fft.fft(waveform1)[6000:20000]
-            fft_complex_t_b = numpy.fft.ifft(filtereddata_t_b,n=maxBars)[:maxBars]
 
             #print(fft_complex_t_treble)
             #print(fft_complex_t_voice)
@@ -1258,39 +1213,9 @@ if __name__ == "__main__":
                         bars[i] = int(abs((bars[i] * float(0.67)) + ((abs(((int(valueMag))))) * (1-float(0.67)))))
                         #else:
                         #bars[i] = int(abs(((window[i]+valueMag))))
-                    if(i>=(trebleBars-5) and i < (trebleBars)):
-                        wave_bass = (np.abs(fft_complex)/24)
-                        wave_voice = (np.abs(fft_complex_t_voice))
-                        #wave_bass_t_mid = smooth1(((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid)), maxBars)*(32+treble_i)
-                        wave_bass_t_mid = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid))*10
-                        wave_bass_t_mid_2 = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid_2))*10
-                        wave_bass_t_snare = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_snare))*10
-                        wave_bass_t_snare_2 = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_snare_2))*10
-                        wave_bass_t_snare_thump = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_snare_thump))*10
-                        wave_bass_t_snare_thump2 = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_snare_thump_end_2))*10
-                        wave_bass_t_crash = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_crash))*10
-                        wave_bass_t_kick = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_kick))*2
-                        wave_bass_t_hihats = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_hihats_iso))*10
-                        #fft_complex_t_hihats_iso
-                        #wave_bass_t_crash = shift(wave_bass_t_crash,-5)
-                        #fft_complex_t_sizzle
-                        wave_bass_t_sizzle = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_sizzle))*10
-                        wave_bass_t_treble = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_treble))*10
-                        wave_bass_t_claps = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_claps_iso))*abs(10)
-                        wave_bass_t_b = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_b))
-                        sumAllsHighEnds = 0
-                        for i2 in range(maxBars):
-                            sumAllsHighEnds += (wave_bass_t_snare_thump[i2])
-                        sumAllsKicks = 0
-                        for i2 in range(maxBars):
-                            sumAllsKicks += (wave_bass_t_kick[i2])
-                        kick = 0
-                        #if((wave_bass_t_kick[i])>1000):
-                          #print((wave_bass_t_kick[i]))
-                        kick = (wave_bass_t_kick[i]*24)
-                        #print(wave_bass_t_claps[i])
-                        kickSl = int(abs((bars[i] * float(0.67)) + ((abs(((int(kick))))) * (1-float(0.67)))))
-                        valueMag = ((wave_bass[i]*2))
+                    if(i>=(trebleBars-5) and i < (trebleBars)): 
+                        wave_bass = ((i+10)/(maxBars-3)*np.abs(fft_complex)) / 10
+                        valueMag = ((wave_bass[i])/2)
                         if(valueMag <= 0):
                           valueMag = 0
      #print(valueMag)
@@ -1299,43 +1224,11 @@ if __name__ == "__main__":
                         #else:
                         #if (ease == 1):
                         valueMag *= 2
-                        bars[i] = int(abs((bars[i] * float(0.67)) + ((abs(((int(valueMag))))) * (1-float(0.67)))))
+                        bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int(valueMag))))) * (1-float(0.00)))))
                         treble_i += 1
                     if(i>=(trebleBars-4) and i < (trebleBars-1)):
-                        wave_bass = (np.abs(fft_complex)/24)
-                        wave_voice = (np.abs(fft_complex_t_voice))
-                        #wave_bass_t_mid = smooth1(((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid)), maxBars)*(32+treble_i)
-                        wave_bass_t_mid = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid))*10
-                        wave_bass_t_mid_2 = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_mid_2))*10
-                        wave_bass_t_snare = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_snare))*10
-                        wave_bass_t_snare_2 = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_snare_2))*10
-                        wave_bass_t_snare_thump = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_snare_thump))*10
-                        wave_bass_t_snare_thump2 = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_snare_thump_end_2))*10
-                        wave_bass_t_crash = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_crash))*4
-                        #fft_complex_t_sizzle
-                        wave_bass_t_sizzle = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_sizzle))*10
-                        wave_bass_t_snare_thump2 = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_snare_thump_end_2))*10
-                        wave_bass_t_treble = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_treble))*10
-                        wave_bass_t_kick = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_kick))*4
-                        wave_bass_t_hihats = ((treble_i)/(maxBars-3)*np.abs(fft_complex_t_hihats_iso))*10
-			#fft_complex_t_claps_iso
-                        wave_bass_t_claps = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_claps_iso))*abs(10)
-                        wave_bass_t_b = ((treble_i+3)/(maxBars-3)*np.abs(fft_complex_t_b))
-                        sumAllsHighEnds = 0
-                        for i2 in range(maxBars):
-                            sumAllsHighEnds += (wave_bass_t_snare[i2]+wave_bass_t_snare_2[i2]+wave_bass_t_snare_thump[i2])
-                        sumAllsKicks = 0
-                        for i2 in range(maxBars):
-                            sumAllsKicks += (wave_bass_t_kick[i2])
-                        #print(sumAllsKicks)
-                        #print(wave_bass_t_claps[i])
-                        kick = 0
-                        #if((wave_bass_t_kick[i])>1000):
-                          #print((wave_bass_t_kick[i]))
-                        kick = (wave_bass_t_kick[i]*24)
-                        #print(wave_bass_t_claps[i])
-                        kickSl = int(abs((bars[i] * float(0.00)) + ((abs(((int(kick))))) * (1-float(0.00)))))
-                        valueMag = ((wave_bass[i]*2))
+                        wave_bass = ((i+10)/(maxBars-3)*np.abs(fft_complex)) / 10
+                        valueMag = ((wave_bass[i])/2)
                         if(valueMag <= 0):
                           valueMag = 0
 			    #print(valueMa)g
@@ -1344,17 +1237,15 @@ if __name__ == "__main__":
                         #else:
                         #if (ease == 1):
                         valueMag *= 4
-                        bars[i] = int(abs((bars[i] * float(0.67)) + ((abs(((int(valueMag)))))) * (1-float(0.67))))
+                        bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int(valueMag)))))) * (1-float(0.00))))
                         treble_i += 1
                         #bars[i] = int(abs(((window[i]+valueMag))))
                     if(i>=trebleBars):
                         wave_bass = ((i+10)/(maxBars-3)*np.abs(fft_complex)) / 10
-                        wave_bass_t  = ((i+10)/(maxBars-3)*np.abs(fft_complex_t_treble)) * 6
-                        bars[i] = int(abs((bars[i] * float(0.67)) + ((abs(((int((wave_bass_t[i]))))))) * (1-float(0.67))))
+                        bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int((wave_bass[i]))))))) * (1-float(0.00))))
                     if(i>=(maxBars-2)):
                         wave_bass = ((i+10)/(maxBars-3)*np.abs(fft_complex)) / 10
-                        wave_bass_t  = ((i+10)/(maxBars-3)*np.abs(fft_complex_t_treble)) * 10
-                        bars[i] = int(abs((bars[i] * float(0.67)) + ((abs(((int((wave_bass_t[i]))))))) * (1-float(0.67))))
+                        bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int((wave_bass[i]))))))) * (1-float(0.00))))
             #spectrum = scale(bars, out_range=(-1, maxBars))
             ease += 1
             spectrum = getTransformedSpectrum(bars)
@@ -1365,21 +1256,6 @@ if __name__ == "__main__":
                 if(i>=1 and barsSilenced == False):
                     bar1 = [int(1280/12)+int((i+(i*int(args["spacing"])))), int(720/2), int(args["size"]), 4+int(abs((spectrum[i])))]
                     pygame.draw.rect(empty_surface_1,(255,255,255),bar1,0)
-                sum1 += np.abs((fft_complex_t_bass[i]))
-                if fft_complex_t_kick[i] > 1:
-                    isKick = False
-                else:
-                    isKick = False
-
-                if fft_complex_t_mid_2[i] > 1:
-                    isHighhat = True
-                else:
-                    isHighhat = False
-                    
-                if fft_complex_t_snare[i] > 1:
-                    isSnare = True
-                else:
-                    isSnare = False
 
             
                    
