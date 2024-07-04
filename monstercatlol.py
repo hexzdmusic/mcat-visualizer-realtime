@@ -1272,7 +1272,10 @@ if __name__ == "__main__":
                         wave_bass = ((i+10)/(maxBars-3)*np.abs(fft_complex)) / 10
                         wave_treble_clap = ((i+10)/(maxBars-3)*np.abs(fft_complex_t_clap))
                         wave_treble_punch_kd = ((i+10)/(maxBars-3)*np.abs(fft_complex_t_punch_kd))
-                        valueMag = (abs((wave_bass[i])+(wave_treble[i])+(wave_treble_clap[i]))) + ((abs(((wave_treble_umidrange[i])+wave_treble_presence[i]+(wave_treble_midrange[i])))))-abs(wave_treble_punch_kd[i]/2)                        
+                        sumTreble = 0
+                        for i2 in range(maxBars):
+                            sumTreble += wave_treble[i]
+                        valueMag = (abs((wave_bass[i])+(wave_treble[i])+(sumTreble))) + ((abs(((wave_treble_umidrange[i])+wave_treble_presence[i]+(wave_treble_midrange[i])))))-abs(wave_treble_punch_kd[i])                        
                         if(valueMag <= 0):
                           valueMag = 0
      #print(valueMag)
@@ -1280,8 +1283,8 @@ if __name__ == "__main__":
                         #bars[i] = int(abs((bars[i] * float(args["initialtreble"])) + ((abs(((int(window[i]+valueMag))))) * (1-float(args["initialtreble"])))))
                         #else:
                         #if (ease == 1):
-                        valueMag *= 6
-                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag))))) * (1-float(0.88)))))
+                        #valueMag *= 
+                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag/4))))) * (1-float(0.88)))))
                         treble_i += 1
                         clapDetect += 1
                     if(i>=(trebleBars-4) and i < (trebleBars-1)):
@@ -1294,7 +1297,11 @@ if __name__ == "__main__":
                         wave_treble_clap = ((i+10)/(maxBars-3)*np.abs(fft_complex_t_clap))
                         wave_bass = ((i+10)/(maxBars-3)*np.abs(fft_complex)) / 10
                         wave_treble_punch_kd = ((i+10)/(maxBars-3)*np.abs(fft_complex_t_punch_kd))
-                        valueMag = (abs((wave_bass[i])+(wave_treble[i])+(wave_treble_clap[i]))) + ((abs(((wave_treble_umidrange[i])+wave_treble_presence[i]+(wave_treble_midrange[i])))))-abs(wave_treble_punch_kd[i]/2)
+                        
+                        sumTreble = 0
+                        for i2 in range(maxBars):
+                            sumTreble += wave_treble[i]
+                        valueMag = (abs((wave_bass[i])+(wave_treble[i])+(sumTreble))) + ((abs(((wave_treble_umidrange[i])+wave_treble_presence[i]+(wave_treble_midrange[i])))))-abs(wave_treble_punch_kd[i])                        
                         if(valueMag <= 0):
                           valueMag = 0
 			    #print(valueMa)g
@@ -1302,8 +1309,8 @@ if __name__ == "__main__":
                         #bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(window[i]+valueMag/3))))) * (1-float(0.90)))))
                         #else:
                         #if (ease == 1):
-                        valueMag *= 6
-                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag)))))) * (1-float(0.88))))
+                        #valueMag *= 6
+                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag/4)))))) * (1-float(0.88))))
                         treble_i += 1
                         clapDetect += 1
                     if(i>=(trebleBars)):
@@ -1324,9 +1331,9 @@ if __name__ == "__main__":
                         #bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(window[i]+valueMag/3))))) * (1-float(0.90)))))
                         #else:
                         #if (ease == 1):
-                        valueMag *= (i*8/maxBars)
+                        valueMag *= (i*9/maxBars)
                         if(i >= (maxBars-2)):
-                            valueMag *= 1.55
+                            valueMag *= 1.65
                         bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int(valueMag)))))) * (1-float(0.00))))
                         treble_i += 1
                         #bars[i] = int(abs(((window[i]+valueMag))))
