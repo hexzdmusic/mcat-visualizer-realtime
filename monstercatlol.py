@@ -154,12 +154,13 @@ ap.add_argument("-l1", "--low1", default=6,   help="Low frequency  cutoff")
 ap.add_argument("-g", "--initialtreble", default=0.00,   help="Treble Level Initial.")
 ap.add_argument("-v", "--volume", default=0.045, help="volume.")
 ap.add_argument("-ga", "--gain", default=0.05,   help="Treble volume.")
-ap.add_argument("-q", "--levelMax", default=0.67,   help="Smoothing Decay")
+ap.add_argument("-q2", "--levelMax", default=0.67,   help="Smoothing Decay")
 ap.add_argument("-1", "--level", default=0.67,   help="Smoothing Attack")
 ap.add_argument("-t", "--maxtreblebars", default=43,   help="Offset treble bars? (42 for monstercat effect!)")
 ap.add_argument("-th", "--maxhightreblebars", default=47,   help="Offset high treble bars? (42 for monstercat effect!)")
-ap.add_argument("-2", "--smlevel", default=3,   help="Smoothing Level (Monstercat Style)") # was 1.5 or 3
+ap.add_argument("-2", "--smlevel", default=1.5,   help="Smoothing Level (Monstercat Style)") # was 1.5 or 3
 ap.add_argument("-4", "--sm2level", default=3,   help="Smoothing Level 2 (Monstercat Style)")
+ap.add_argument("-q", "--qlevel", default=0.3,   help="Q Smoothing Level (Monstercat Style)")
 ap.add_argument("-3", "--treblesmlevel", default=3,   help="Treble Smoothing Level (Monstercat Style)") # maybe the same with maxbars?
 #treblehighsmlevel
 ap.add_argument("-5", "--treblehighsmlevel", default=2,   help="High Treble Smoothing Level (Monstercat Style)") # maybe the same with maxbars?
@@ -490,7 +491,7 @@ def savitskyGolaySmooth(array, smoothingPoints=3, smoothingPasses=5):
         newArr = [0] * len(array)
         for i in range(sidePoints):
             newArr[i] = lastArray[i]
-            #newArr[len(lastArray) - i - 1] = lastArray[len(lastArray) - i - 1]
+            newArr[len(lastArray) - i - 1] = lastArray[len(lastArray) - i - 1]
         for i in range((len(lastArray) - sidePoints)):
             sum1 = 0
             for n in range(-sidePoints, sidePoints):
@@ -732,8 +733,8 @@ def OddOneOut(array):
 #array2 = [0] * (maxBars+8)
 fmem = [0] * (maxBars+8)
 def Integral(array,gravity):
-    f = FalloffFilt(array,gravity)
-    #f = array
+    #f = FalloffFilt(array,gravity)
+    f = array
     integral = int(args["integral"]) / 100
     tintegral = int(args["trebleintegral"]) / 100
     array = np.asarray(array)
@@ -788,7 +789,7 @@ def monstercat_filter(array):
     # array
     mcat = array
     #newArr2 = [0] * (len(array)+8)
-    #smootht = smooth1(array, 3)
+    smootht = savitskyGolaySmooth(array, 3, 1)
     #SmoothT_2 = averageTransform(smooth1(array,abs((maxBars-5))))
     #smootht = savitskyGolaySmooth(array, 3, 1)
     #Smmoth = smooth1(SmoothT, maxBars)
@@ -798,7 +799,7 @@ def monstercat_filter(array):
     sumTreble = 0
     for i in range(1,maxBars):
         #newArr2[i-1] = ((array[i-1]+array[i]+array[i+1]/float(args["smlevel"]))/8)*2
-        newArr2[i] = ((((mcat[i-1]))+((mcat[i]))+((mcat[i+1]))/float(args["smlevel"])))
+        newArr2[i] = ((((smootht[i-1]/4)+(mcat[i-1]))+((smootht[i]/4)+(mcat[i]))+((smootht[i+1]/4)+(mcat[i+1]))/float(args["smlevel"])))
         #newArr2[i] = mcat[i]
         #newArr2[i+1] = ((array[i-1]+array[i]+array[i+1]/float(args["smlevel"]))/8)
         #newArr2[i+1] = (array[i-1]+array[i]+array[i+1]/float(args["smlevel"]))
@@ -806,7 +807,7 @@ def monstercat_filter(array):
             newArr2[i] = 0		
 #	if i >= (trebleBars):
         if i >= (trebleBars):
-            mcat = savitskyGolaySmooth(array, 3, 1)
+            #mcat = savitskyGolaySmooth(array, 3, 1)
             passes = 3
             p = 1
             #prevV_sm = SmoothT_2[i-1] # (trebleBars-8)
@@ -825,8 +826,8 @@ def monstercat_filter(array):
             #newArr2[i] = ((prevV+currV+nextV/float(12)))
             #newArr2[i] = (((prevV+currV+nextV/8)) + ((array[i-1]+array[i]+array[i+1]/8)))
             #newArr2[i] = (((prevV + currV + nextV ))) # / 64 - ((array[i-1] + array[i] + array[i+1] / 8))
-            newArr2[i] = ((prevV + currV + nextV / float(args["smlevel"])))
-            #newArr2[i] = ((((smootht[i-1]/3)+(mcat[i-1]))+((smootht[i]/3)+(mcat[i]))+((smootht[i+1]/3)+(mcat[i+1]))/float(12)))
+            newArr2[i] = ((prevV + currV + nextV / float(12)))
+            #newArr2[i] = ((((smootht[i-1]/4)+(mcat[i-1]))+((smootht[i]/4)+(mcat[i]))+((smootht[i+1]/4)+(mcat[i+1]))/float(12)))
             if newArr2[i] < 1:
                 newArr2[i] = 0
 #            if(i>=(maxBars-2)):
@@ -1278,14 +1279,14 @@ if __name__ == "__main__":
                         valueMag = (abs((wave_bass[i])+(wave_treble[i])+(sumTreble))) + ((abs(((wave_treble_umidrange[i])+wave_treble_presence[i]+(wave_treble_midrange[i])))))-abs(wave_treble_punch_kd[i])                        
                         if(valueMag <= 0):
                           valueMag = 0
-     #print(valueMag)
+			    #print(valueMa)g
                         #if SMOOTHING_FACTOR != -1:
-                        #bars[i] = int(abs((bars[i] * float(args["initialtreble"])) + ((abs(((int(window[i]+valueMag))))) * (1-float(args["initialtreble"])))))
+                        #bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(window[i]+valueMag/3))))) * (1-float(0.90)))))
                         #else:
                         #if (ease == 1):
-                        #valueMag *= 
-                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag/4))))) * (1-float(0.88)))))
-                        treble_i += 1
+                        #valueMag *= 1.55
+                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag/3)))))) * (1-float(0.88))))
+
                         clapDetect += 1
                     if(i>=(trebleBars-4) and i < (trebleBars-1)):
                         wave_treble = ((i+10)/(maxBars-3)*np.abs(fft_complex_t_treble)) / 10
@@ -1309,8 +1310,8 @@ if __name__ == "__main__":
                         #bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(window[i]+valueMag/3))))) * (1-float(0.90)))))
                         #else:
                         #if (ease == 1):
-                        #valueMag *= 6
-                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag/4)))))) * (1-float(0.88))))
+                        #valueMag *= 1.55
+                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag/3)))))) * (1-float(0.88))))
                         treble_i += 1
                         clapDetect += 1
                     if(i>=(trebleBars)):
@@ -1331,15 +1332,15 @@ if __name__ == "__main__":
                         #bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(window[i]+valueMag/3))))) * (1-float(0.90)))))
                         #else:
                         #if (ease == 1):
-                        valueMag *= (i*9/maxBars)
+                        valueMag *= (i*8/maxBars)
                         if(i >= (maxBars-2)):
-                            valueMag *= 1.65
+                            valueMag *= 1.25
                         bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int(valueMag)))))) * (1-float(0.00))))
                         treble_i += 1
                         #bars[i] = int(abs(((window[i]+valueMag))))
             #spectrum = scale(bars, out_range=(-1, maxBars))
             ease += 1
-            spectrum = getTransformedSpectrum(trapcode_soundkeys_smooth(bars,0.3))
+            spectrum = getTransformedSpectrum(trapcode_soundkeys_smooth(bars,float(args["qlevel"])))
             sum2 = 0
             for i in range(maxBars):
                 #if barsSilenced == True:
