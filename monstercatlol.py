@@ -1332,7 +1332,7 @@ if __name__ == "__main__":
                         #bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(window[i]+valueMag/3))))) * (1-float(0.90)))))
                         #else:
                         #if (ease == 1):
-                        valueMag *= (i*8/maxBars)
+                        valueMag *= (i*10/maxBars)
                         #if(i >= (maxBars-2)):
                         #    valueMag *= 1.25
                         bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int(valueMag)))))) * (1-float(0.00))))
