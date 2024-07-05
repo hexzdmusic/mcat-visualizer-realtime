@@ -158,7 +158,7 @@ ap.add_argument("-q2", "--levelMax", default=0.67,   help="Smoothing Decay")
 ap.add_argument("-1", "--level", default=0.67,   help="Smoothing Attack")
 ap.add_argument("-t", "--maxtreblebars", default=43,   help="Offset treble bars? (42 for monstercat effect!)")
 ap.add_argument("-th", "--maxhightreblebars", default=47,   help="Offset high treble bars? (42 for monstercat effect!)")
-ap.add_argument("-2", "--smlevel", default=1.5,   help="Smoothing Level (Monstercat Style)") # was 1.5 or 3
+ap.add_argument("-2", "--smlevel", default=3,   help="Smoothing Level (Monstercat Style)") # was 1.5 or 3
 ap.add_argument("-4", "--sm2level", default=3,   help="Smoothing Level 2 (Monstercat Style)")
 ap.add_argument("-q", "--qlevel", default=0.3,   help="Q Smoothing Level (Monstercat Style)")
 ap.add_argument("-3", "--treblesmlevel", default=3,   help="Treble Smoothing Level (Monstercat Style)") # maybe the same with maxbars?
@@ -807,7 +807,7 @@ def monstercat_filter(array):
             newArr2[i] = 0		
 #	if i >= (trebleBars):
         if i >= (trebleBars):
-            #mcat = savitskyGolaySmooth(array, 3, 1)
+            mcat = savitskyGolaySmooth(array, 3, 1)
             passes = 3
             p = 1
             #prevV_sm = SmoothT_2[i-1] # (trebleBars-8)
@@ -827,7 +827,7 @@ def monstercat_filter(array):
             #newArr2[i] = (((prevV+currV+nextV/8)) + ((array[i-1]+array[i]+array[i+1]/8)))
             #newArr2[i] = (((prevV + currV + nextV ))) # / 64 - ((array[i-1] + array[i] + array[i+1] / 8))
             newArr2[i] = ((prevV + currV + nextV / float(12)))
-            #newArr2[i] = ((((smootht[i-1]/4)+(mcat[i-1]))+((smootht[i]/4)+(mcat[i]))+((smootht[i+1]/4)+(mcat[i+1]))/float(12)))
+            #newArr2[i] = ((((smootht[i-1]/4)+(mcat[i-1]))+((smootht[i]/4)+(mcat[i]))+((smootht[i+1]/4)+(mcat[i+1]))/float(args["smlevel"])))
             if newArr2[i] < 1:
                 newArr2[i] = 0
 #            if(i>=(maxBars-2)):
@@ -1119,7 +1119,7 @@ if __name__ == "__main__":
     stream = p.open(format=sample_format,
                 channels = 1,
                 rate = fs,
-                frames_per_buffer = 3000,
+                frames_per_buffer = 3074,
                 input = True,
                 stream_callback=callback)
     stream.start_stream()
@@ -1276,16 +1276,16 @@ if __name__ == "__main__":
                         sumTreble = 0
                         for i2 in range(maxBars):
                             sumTreble += wave_treble[i]
-                        valueMag = (abs((wave_bass[i])+(wave_treble[i])+(sumTreble))) + ((abs(((wave_treble_umidrange[i])+wave_treble_presence[i]+(wave_treble_midrange[i])))))-abs(wave_treble_punch_kd[i])                        
+                        valueMag = (abs((wave_bass[i])+(wave_treble[i])+(sumTreble))) + ((abs(((wave_treble_umidrange[i])+wave_treble_presence[i]+(wave_treble_midrange[i])))))-abs(wave_treble_punch_kd[i]*1.25)                                               
                         if(valueMag <= 0):
                           valueMag = 0
 			    #print(valueMa)g
                         #if SMOOTHING_FACTOR != -1:
-                        #bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(window[i]+valueMag/3))))) * (1-float(0.90)))))
+                        #bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(window[i]+valueMag/4))))) * (1-float(0.90)))))
                         #else:
                         #if (ease == 1):
                         #valueMag *= 1.55
-                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag/3)))))) * (1-float(0.88))))
+                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag/4)))))) * (1-float(0.88))))
 
                         clapDetect += 1
                     if(i>=(trebleBars-4) and i < (trebleBars-1)):
@@ -1302,7 +1302,7 @@ if __name__ == "__main__":
                         sumTreble = 0
                         for i2 in range(maxBars):
                             sumTreble += wave_treble[i]
-                        valueMag = (abs((wave_bass[i])+(wave_treble[i])+(sumTreble))) + ((abs(((wave_treble_umidrange[i])+wave_treble_presence[i]+(wave_treble_midrange[i])))))-abs(wave_treble_punch_kd[i])                        
+                        valueMag = (abs((wave_bass[i])+(wave_treble[i])+(sumTreble))) + ((abs(((wave_treble_umidrange[i])+wave_treble_presence[i]+(wave_treble_midrange[i])))))-abs(wave_treble_punch_kd[i]*1.25)                        
                         if(valueMag <= 0):
                           valueMag = 0
 			    #print(valueMa)g
@@ -1311,7 +1311,7 @@ if __name__ == "__main__":
                         #else:
                         #if (ease == 1):
                         #valueMag *= 1.55
-                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag/3)))))) * (1-float(0.88))))
+                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag/4)))))) * (1-float(0.88))))
                         treble_i += 1
                         clapDetect += 1
                     if(i>=(trebleBars)):
@@ -1333,8 +1333,8 @@ if __name__ == "__main__":
                         #else:
                         #if (ease == 1):
                         valueMag *= (i*8/maxBars)
-                        if(i >= (maxBars-2)):
-                            valueMag *= 1.25
+                        #if(i >= (maxBars-2)):
+                        #    valueMag *= 1.25
                         bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int(valueMag)))))) * (1-float(0.00))))
                         treble_i += 1
                         #bars[i] = int(abs(((window[i]+valueMag))))
