@@ -169,7 +169,7 @@ ap.add_argument("-mam", "--measureaudiomultiplier", default=40,   help="....")
 ap.add_argument("-sens", "--sensitivity", default=35,   help="....")
 ap.add_argument("-sp", "--spacing", default=16,   help="...")
 ap.add_argument("-si", "--size", default=13,   help="...")
-ap.add_argument("-fi", "--mcfilter", default=2.0,   help="...")
+ap.add_argument("-fi", "--mcfilter", default=1.0,   help="...")
 ap.add_argument("-wf", "--wavefilter", default=0.0,   help="...")
 ap.add_argument("-sa", "--samples", default=44100,   help="...") # 48000
 ap.add_argument("-fft", "--fftsize", default=2000,   help="...") # 14!
@@ -177,7 +177,7 @@ ap.add_argument("-buff", "--buffsize", default=2000,   help="...") # 12!
 ap.add_argument("-int", "--integral", default=85,   help="...")
 ap.add_argument("-tint", "--trebleintegral", default=85,   help="...")
 ap.add_argument("-gra", "--gravity", default=15000,   help="...")
-ap.add_argument("-eq", "--eqbalance", default=0.63,   help="...")
+ap.add_argument("-eq", "--eqbalance", default=0.64,   help="...")
 ap.add_argument("-ls", "--logscale", default=1.55,   help="...")
 ap.add_argument("-lm", "--limit", default=1500,   help="height limit")
 args = vars(ap.parse_args())
@@ -526,6 +526,39 @@ def howManyNewTails(array, tails=2):
         for j in range(tails):
             newArr[i+j] = (4+(newArr[i])/(1+j))
     return newArr
+
+def barHigher(array):
+    array = np.asarray(array)
+    length = len(array)
+
+    # Initialize the transformed array with zeros
+    transformed_values = array
+
+    # First pass: basic transformation
+    
+    # Second pass: smooth the values and ensure the last bar is higher
+    smoothed_values = [0] * (length*2)
+    for i in range(length):
+        value = 0
+        if i == 0:
+            value = array[i]
+        elif i == length - 1:
+            value = max((array[i - 1] + array[i]) / 2, array[i])
+        else:
+            prev_value = array[i - 1]
+            cur_value = array[i]
+            next_value = array[i + 1]
+            if cur_value >= prev_value and cur_value >= next_value:
+                value = cur_value
+            else:
+                value = ((cur_value / 2) + (max(next_value, prev_value) / 3) + (min(next_value, prev_value) / 6))
+        smoothed_values[i] = value
+    
+    # Ensure the last bar is higher than the current one
+    if smoothed_values[-2] > smoothed_values[-1]:
+        smoothed_values[-1] = smoothed_values[-2] + 1
+
+    return smoothed_values
 
 def averageTransform(array):
     array = np.asarray(array)
@@ -942,7 +975,7 @@ def getTransformedSpectrum(array):
     #newArr = exponentialTransform(newArr)
     #newArr = smooth1(newArr,1) 
     #newArr = monstercatify(newArr)
-	
+    newArr = barHigher(newArr)
     return newArr
 
 import threading
@@ -1119,7 +1152,7 @@ if __name__ == "__main__":
     stream = p.open(format=sample_format,
                 channels = 1,
                 rate = fs,
-                frames_per_buffer = 3074,
+                frames_per_buffer = 3000,
                 input = True,
                 stream_callback=callback)
     stream.start_stream()
@@ -1281,11 +1314,11 @@ if __name__ == "__main__":
                           valueMag = 0
 			    #print(valueMa)g
                         #if SMOOTHING_FACTOR != -1:
-                        #bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(window[i]+valueMag/4))))) * (1-float(0.90)))))
+                        #bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(window[i]+valueMag/3))))) * (1-float(0.90)))))
                         #else:
                         #if (ease == 1):
                         #valueMag *= 1.55
-                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag/4)))))) * (1-float(0.88))))
+                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag/3)))))) * (1-float(0.88))))
 
                         clapDetect += 1
                     if(i>=(trebleBars-4) and i < (trebleBars-1)):
@@ -1311,7 +1344,7 @@ if __name__ == "__main__":
                         #else:
                         #if (ease == 1):
                         #valueMag *= 1.55
-                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag/4)))))) * (1-float(0.88))))
+                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag/3)))))) * (1-float(0.88))))
                         treble_i += 1
                         clapDetect += 1
                     if(i>=(trebleBars)):
@@ -1332,9 +1365,9 @@ if __name__ == "__main__":
                         #bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(window[i]+valueMag/3))))) * (1-float(0.90)))))
                         #else:
                         #if (ease == 1):
-                        valueMag *= (i*10/maxBars)
-                        #if(i >= (maxBars-2)):
-                        #    valueMag *= 1.25
+                        valueMag *= (i*12/maxBars)
+                        if(i >= (maxBars-2)):
+                            valueMag *= 1.25
                         bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int(valueMag)))))) * (1-float(0.00))))
                         treble_i += 1
                         #bars[i] = int(abs(((window[i]+valueMag))))
