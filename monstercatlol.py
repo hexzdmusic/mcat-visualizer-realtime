@@ -537,26 +537,13 @@ def barHigher(array):
     # First pass: basic transformation
     
     # Second pass: smooth the values and ensure the last bar is higher
-    smoothed_values = [0] * (length*2)
+    smoothed_values = array
     for i in range(length):
         value = 0
-        if i == 0:
-            value = array[i]
-        elif i == length - 1:
-            value = max((array[i - 1] + array[i]) / 2, array[i])
-        else:
-            prev_value = array[i - 1]
-            cur_value = array[i]
-            next_value = array[i + 1]
-            if cur_value >= prev_value and cur_value >= next_value:
-                value = cur_value
-            else:
-                value = ((cur_value / 2) + (max(next_value, prev_value) / 3) + (min(next_value, prev_value) / 6))
-        smoothed_values[i] = value
-    
+        
     # Ensure the last bar is higher than the current one
-    if smoothed_values[-2] > smoothed_values[-1]:
-        smoothed_values[-1] = smoothed_values[-2] + 1
+    if smoothed_values[i-2] > smoothed_values[i-1]:
+        smoothed_values[i-1] = smoothed_values[i-2] + 1
 
     return smoothed_values
 
@@ -1365,7 +1352,7 @@ if __name__ == "__main__":
                         #bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(window[i]+valueMag/3))))) * (1-float(0.90)))))
                         #else:
                         #if (ease == 1):
-                        valueMag *= (i*12/maxBars)
+                        valueMag *= (i*8/maxBars)
                         if(i >= (maxBars-2)):
                             valueMag *= 1.25
                         bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int(valueMag)))))) * (1-float(0.00))))
