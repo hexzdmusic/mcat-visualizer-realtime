@@ -1306,7 +1306,7 @@ if __name__ == "__main__":
                         #else:
                         #if (ease == 1):
                         #valueMag *= 1.15
-                        bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int(valueMag/6)))))) * (1-float(0.00))))
+                        bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int(valueMag/16)))))) * (1-float(0.00))))
 
                         clapDetect += 1
                     if(i>=(trebleBars-4) and i < (trebleBars-1)):
@@ -1332,7 +1332,7 @@ if __name__ == "__main__":
                         #else:
                         #if (ease == 1):
                         #valueMag *= 1.15
-                        bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int(valueMag/6)))))) * (1-float(0.00))))
+                        bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int(valueMag/16)))))) * (1-float(0.00))))
                         treble_i += 1
                         clapDetect += 1
                     if(i>=(trebleBars)):
