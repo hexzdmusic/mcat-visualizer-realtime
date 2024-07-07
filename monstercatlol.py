@@ -169,7 +169,7 @@ ap.add_argument("-mam", "--measureaudiomultiplier", default=40,   help="....")
 ap.add_argument("-sens", "--sensitivity", default=35,   help="....")
 ap.add_argument("-sp", "--spacing", default=16,   help="...")
 ap.add_argument("-si", "--size", default=13,   help="...")
-ap.add_argument("-fi", "--mcfilter", default=1.0,   help="...")
+ap.add_argument("-fi", "--mcfilter", default=2.0,   help="...")
 ap.add_argument("-wf", "--wavefilter", default=0.0,   help="...")
 ap.add_argument("-sa", "--samples", default=44100,   help="...") # 48000
 ap.add_argument("-fft", "--fftsize", default=2000,   help="...") # 14!
@@ -1296,7 +1296,8 @@ if __name__ == "__main__":
                         sumTreble = 0
                         for i2 in range(maxBars):
                             sumTreble += wave_treble[i]
-                        valueMag = (abs((wave_bass[i])+(wave_treble[i])+(sumTreble))) + ((abs(((wave_treble_umidrange[i])+wave_treble_presence[i]+(wave_treble_midrange[i])))))-abs(wave_treble_punch_kd[i]*1.25)                                               
+                        valueMag = (abs((wave_treble[i])+(sumTreble))) + ((abs(((wave_treble_umidrange[i])+(wave_treble_presence[i])+(wave_treble_midrange[i])))))-abs(wave_treble_punch_kd[i]*2)                        
+
                         if(valueMag <= 0):
                           valueMag = 0
 			    #print(valueMa)g
@@ -1304,8 +1305,8 @@ if __name__ == "__main__":
                         #bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(window[i]+valueMag/3))))) * (1-float(0.90)))))
                         #else:
                         #if (ease == 1):
-                        #valueMag *= 1.55
-                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag/3)))))) * (1-float(0.88))))
+                        #valueMag *= 1.15
+                        bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int(valueMag/10)))))) * (1-float(0.00))))
 
                         clapDetect += 1
                     if(i>=(trebleBars-4) and i < (trebleBars-1)):
@@ -1322,7 +1323,7 @@ if __name__ == "__main__":
                         sumTreble = 0
                         for i2 in range(maxBars):
                             sumTreble += wave_treble[i]
-                        valueMag = (abs((wave_bass[i])+(wave_treble[i])+(sumTreble))) + ((abs(((wave_treble_umidrange[i])+wave_treble_presence[i]+(wave_treble_midrange[i])))))-abs(wave_treble_punch_kd[i]*1.25)                        
+                        valueMag = (abs((wave_treble[i])+(sumTreble))) + ((abs(((wave_treble_umidrange[i])+(wave_treble_presence[i])+(wave_treble_midrange[i])))))-abs(wave_treble_punch_kd[i]*2)                        
                         if(valueMag <= 0):
                           valueMag = 0
 			    #print(valueMa)g
@@ -1330,8 +1331,8 @@ if __name__ == "__main__":
                         #bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(window[i]+valueMag/3))))) * (1-float(0.90)))))
                         #else:
                         #if (ease == 1):
-                        #valueMag *= 1.55
-                        bars[i] = int(abs((bars[i] * float(0.88)) + ((abs(((int(valueMag/3)))))) * (1-float(0.88))))
+                        #valueMag *= 1.15
+                        bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int(valueMag/10)))))) * (1-float(0.00))))
                         treble_i += 1
                         clapDetect += 1
                     if(i>=(trebleBars)):
@@ -1343,7 +1344,7 @@ if __name__ == "__main__":
                         wave_bass = ((i+10)/(maxBars-3)*np.abs(fft_complex)) / 10
                         wave_treble_clap = ((i+10)/(maxBars-3)*np.abs(fft_complex_t_clap)) / 10
                         wave_treble_punch_kd = ((i+10)/(maxBars-3)*np.abs(fft_complex_t_punch_kd)) / 10
-                        valueMag = ((abs((wave_treble_umidrange[i]+wave_treble_presence[i]+wave_treble_midrange[i]))))
+                        valueMag = ((abs((wave_treble[i]/8)+(wave_treble_umidrange[i]+wave_treble_presence[i]+wave_treble_midrange[i]))))
                         if(valueMag <= 0):
                           valueMag = 0
                         
@@ -1352,9 +1353,9 @@ if __name__ == "__main__":
                         #bars[i] = int(abs((bars[i] * float(0.90)) + ((abs(((int(window[i]+valueMag/3))))) * (1-float(0.90)))))
                         #else:
                         #if (ease == 1):
-                        valueMag *= (i*8/maxBars)
+                        valueMag *= (i*10/maxBars)
                         if(i >= (maxBars-2)):
-                            valueMag *= 1.25
+                            valueMag *= 1.15
                         bars[i] = int(abs((bars[i] * float(0.00)) + ((abs(((int(valueMag)))))) * (1-float(0.00))))
                         treble_i += 1
                         #bars[i] = int(abs(((window[i]+valueMag))))
